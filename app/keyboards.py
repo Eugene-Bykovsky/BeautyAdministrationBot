@@ -1,11 +1,19 @@
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 
-start_keyboard = ReplyKeyboardMarkup(
+consent_keyboard = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Тут нужно добавить")],
-        [KeyboardButton(text="Тут нужно добавить")]
+        [KeyboardButton(text="Согласен с обработкой персональнных данных")],
     ],
     resize_keyboard=True,
-    input_field_placeholder="Выберите пункт меню"
+)
+
+
+start_keyboard = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Запись через Салон")],
+        [KeyboardButton(text="Запись к Любимому мастеру")],
+        [KeyboardButton(text="Запись через звонок по телефону")],
+    ],
+    resize_keyboard=True,
 )
