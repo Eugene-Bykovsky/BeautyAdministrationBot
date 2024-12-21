@@ -2,16 +2,15 @@ import requests
 
 from aiogram import Router, F
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import Message, FSInputFile, InlineKeyboardButton, \
-    CallbackQuery
+from aiogram.types import (Message, InlineKeyboardButton,
+                           CallbackQuery)
 from aiogram.fsm.context import FSMContext
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from app.keyboards import consent_keyboard, start_keyboard
+from app.keyboards import back_to_menu_keyboard
+from config import API_URL
 
 router = Router()
-
-base_url = 'http://127.0.0.1:8000/api'
 
 
 # FSM States
@@ -22,36 +21,9 @@ class BookingState(StatesGroup):
     entering_phone = State()
 
 
-@router.message(F.text == '/start')
-async def start_command(message: Message):
-    user_name = message.from_user.first_name
-    await message.answer(
-        f"Привет, {user_name}! 🙋‍♀️\n"
-        "Перед началом использования бота, пожалуйста, ознакомьтесь с "
-        "документом "
-        "о согласии на обработку персональных данных.\n\n"
-        "Нажмите кнопку ниже, чтобы подтвердить согласие:",
-        reply_markup=consent_keyboard
-    )
-
-    consent_file = FSInputFile(
-        "files/soglasie.pdf")  # Преобразуем файл в InputFile
-    await message.answer_document(document=consent_file)
-
-
-@router.message(F.text == 'Согласен с обработкой персональнных данных')
-async def consent_given(message: Message):
-    await message.answer(
-        "Спасибо за ваше согласие! 🎉\n"
-        "Теперь вы можете начать записываться на процедуры, выбирать мастеров "
-        "и получать всю необходимую информацию.",
-        reply_markup=start_keyboard
-    )
-
-
-@router.message(F.text == 'Запись через Салон')
-async def choose_salon_start(message: Message, state: FSMContext):
-    response = requests.get(f'{base_url}/salons')
+@router.callback_query(F.data == "book_salon")
+async def choose_salon_start(callback: CallbackQuery, state: FSMContext):
+    response = requests.get(f'{API_URL}/salons')
     salons = response.json()
 
     if salons:
@@ -64,10 +36,14 @@ async def choose_salon_start(message: Message, state: FSMContext):
             keyboard_builder.row(button)
 
         keyboard = keyboard_builder.as_markup()
-        await message.answer("Выберите салон:", reply_markup=keyboard)
+        await callback.message.answer("Выберите салон:", reply_markup=keyboard)
+        await callback.message.answer(
+            "Или нажмите, чтобы вернуться на главное меню:",
+            reply_markup=back_to_menu_keyboard
+        )
         await state.set_state(BookingState.choosing_salon)
     else:
-        await message.answer("Список салонов недоступен.")
+        await callback.message.answer("Список салонов недоступен.")
 
 
 @router.callback_query(F.data.startswith('choose_service_'))
@@ -75,7 +51,7 @@ async def choose_service(callback: CallbackQuery, state: FSMContext):
     salon_id = int(callback.data.split('_')[-1])
     await state.update_data(salon_id=salon_id)
 
-    response = requests.get(f'{base_url}/services')
+    response = requests.get(f'{API_URL}/services')
     services = response.json()
 
     if services:
@@ -90,6 +66,10 @@ async def choose_service(callback: CallbackQuery, state: FSMContext):
         keyboard = keyboard_builder.as_markup()
         await callback.message.answer("Выберите услугу:",
                                       reply_markup=keyboard)
+        await callback.message.answer(
+            "Или нажмите, чтобы вернуться на главное меню:",
+            reply_markup=back_to_menu_keyboard
+        )
         await state.set_state(BookingState.choosing_service)
     else:
         await callback.message.answer("Список услуг недоступен.")
@@ -101,7 +81,7 @@ async def choose_time(callback: CallbackQuery, state: FSMContext):
     user_data = await state.get_data()
     salon_id = user_data['salon_id']
 
-    response = requests.get(f'{base_url}/schedules',
+    response = requests.get(f'{API_URL}/schedules',
                             params={"salon_id": salon_id,
                                     "service_id": service_id})
     schedules = response.json()
@@ -118,6 +98,10 @@ async def choose_time(callback: CallbackQuery, state: FSMContext):
 
         keyboard = keyboard_builder.as_markup()
         await callback.message.answer("Выберите время:", reply_markup=keyboard)
+        await callback.message.answer(
+            "Или нажмите, чтобы вернуться на главное меню:",
+            reply_markup=back_to_menu_keyboard
+        )
         await state.set_state(BookingState.choosing_time)
     else:
         await callback.message.answer("Нет доступного времени.")
@@ -129,6 +113,10 @@ async def confirm_appointment(callback: CallbackQuery, state: FSMContext):
     await state.update_data(schedule_id=schedule_id)
 
     await callback.message.answer("Введите ваш номер телефона:")
+    await callback.message.answer(
+        "Или нажмите, чтобы вернуться на главное меню:",
+        reply_markup=back_to_menu_keyboard
+    )
     await state.set_state(BookingState.entering_phone)
 
 
@@ -143,7 +131,7 @@ async def finalize_booking(message: Message, state: FSMContext):
         "schedule": user_data['schedule_id']
     }
 
-    response = requests.post(f'{base_url}/appointments-new/create/',
+    response = requests.post(f'{API_URL}/appointments-new/create/',
                              json=payload)
 
     if response.status_code == 201:
