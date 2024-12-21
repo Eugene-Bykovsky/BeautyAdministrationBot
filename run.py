@@ -3,8 +3,8 @@ from environs import Env
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 
-# from app.handlers.handlers_salons import router
-from app.handlers import  start_router, master_router
+from app.handlers import (start_router, master_router, salon_router,
+                          phone_router)
 
 
 async def main():
@@ -14,8 +14,9 @@ async def main():
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
     dp = Dispatcher(storage=MemoryStorage())
     dp.include_router(start_router)
-    # dp.include_router(salons_router)
+    dp.include_router(salon_router)
     dp.include_router(master_router)
+    dp.include_router(phone_router)
     await dp.start_polling(bot)
 
 

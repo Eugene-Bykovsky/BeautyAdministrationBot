@@ -1,5 +1,6 @@
 from aiogram import Router, F
-from aiogram.types import Message, FSInputFile
+from aiogram.fsm.context import FSMContext
+from aiogram.types import Message, FSInputFile, ReplyKeyboardRemove
 
 from app.keyboards import consent_keyboard, start_keyboard
 
@@ -31,3 +32,12 @@ async def consent_given(message: Message):
         "и получать всю необходимую информацию.",
         reply_markup=start_keyboard
     )
+
+
+@router.message(F.text == "Вернуться в главное меню")
+async def back_to_main_menu(message: Message, state: FSMContext):
+    await state.clear()
+    await message.answer("Вы вернулись в главное меню.",
+                         reply_markup=ReplyKeyboardRemove())
+    await message.answer("Выберите действие:",
+                         reply_markup=start_keyboard)
