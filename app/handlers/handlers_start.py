@@ -20,7 +20,7 @@ async def start_command(message: Message):
     )
 
     consent_file = FSInputFile(
-        "files/soglasie.pdf")  # Преобразуем файл в InputFile
+        "files/soglasie.pdf")
     await message.answer_document(document=consent_file)
 
 

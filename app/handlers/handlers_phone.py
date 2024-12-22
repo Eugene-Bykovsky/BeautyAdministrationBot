@@ -11,7 +11,7 @@ router = Router()
 @router.callback_query(lambda c: c.data == "book_phone")
 async def show_phone_list(callback_query: types.CallbackQuery):
     try:
-        response = requests.get(API_URL, timeout=10)
+        response = requests.get(f'{API_URL}/salons/', timeout=10)
         response.raise_for_status()
     except requests.RequestException as e:
         await callback_query.message.answer(
@@ -21,6 +21,7 @@ async def show_phone_list(callback_query: types.CallbackQuery):
 
     # Обрабатываем ответ API
     salons = response.json()
+    print(salons)
     if not salons:
         await callback_query.message.answer("Список салонов пуст.")
         return
